@@ -29,12 +29,15 @@ for($i = $rev; $i > 0; --$i) {
 	  }
 	  // If file is deleted
 	  elseif(trim(substr($line, 0, 4)) == 'D') {
-		$fileName = trim(substr($line, strpos($line, 'D ')));
+		$fileName = trim(substr($line, strpos($line, 'D ') + 1));
 		
 		if($fileToFind == '' || strpos($fileName, $fileToFind) !== false) {
 		  fwrite(STDOUT, "{$fileName} deleted in revision: {$revision} \r\n");		  
-		  file_put_contents('foundDeletedFiles.txt' , "{$fileName} deleted in revision: {$revision} \r\n", FILE_APPEND);
-		  if($fileToFind != '') {
+		  
+		  if($fileToFind == '') {
+			file_put_contents('foundDeletedFiles.txt' , "{$fileName} deleted in revision: {$revision} \r\n", FILE_APPEND);
+		  }
+		  else {
 			fwrite(STDOUT, "Done! \r\n");
 			exit;
 		  }
