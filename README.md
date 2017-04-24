@@ -10,10 +10,19 @@ To start looking from revision 1052 backwards for the file "FooBar.txt"
 
  $ ./svn-find-deleted-file 1052 "FooBar.txt" 
  
- You can also run in interactive mode with 
+ Checking rev. r1052
+ Checking rev. r1051
+ Checking rev. r1049
+ Checking rev. r1048
+ /trunk/My Project/src/FooBar.txt deleted in revision: r1048
+ Done!
+
+You can also run in interactive mode with 
  
  $ ./svn-find-deleted-file
- 
+
+If you look for all deleted files (i.e. don't specify a file) a file named foundDeletedFiles.txt will be created and will contain all the information about found deleted files.
+
 You are free to use and modify this script as long as you credit me and
 make your changes avalible to the public.
 
