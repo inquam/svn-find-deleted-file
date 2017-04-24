@@ -32,14 +32,13 @@ for($i = $rev; $i > 0; --$i) {
 		$fileName = trim(substr($line, strpos($line, 'D ')));
 		
 		if($fileToFind == '' || strpos($fileName, $fileToFind) !== false) {
-		  fwrite(STDOUT, "{$fileName} deleted in revision: {$revision} \r\n");
+		  fwrite(STDOUT, "{$fileName} deleted in revision: {$revision} \r\n");		  
 		  file_put_contents('foundDeletedFiles.txt' , "{$fileName} deleted in revision: {$revision} \r\n", FILE_APPEND);
 		  if($fileToFind != '') {
 			fwrite(STDOUT, "Done! \r\n");
 			exit;
 		  }
 		}
-		echo "{$fileName} deleted in revision: {$revision} \r\n";
 	  }
 	}
 }
