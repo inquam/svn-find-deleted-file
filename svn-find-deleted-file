@@ -1,0 +1,52 @@
+#!/usr/bin/env php
+<?php
+if(!empty($argv[1])) {
+	$rev = (int)trim($argv[1]);
+}
+else {
+	fwrite(STDOUT,  "Enter revision to start searching from: ");
+	$rev = (int)trim(fgets(STDIN));
+}
+
+if(!empty($argv[2])) {
+	$fileToFind = trim($argv[2]);
+}
+else {
+	fwrite(STDOUT,  "Enter file to search for (empty for all files): ");
+	$fileToFind = trim(fgets(STDIN));
+}
+
+for($i = $rev; $i > 0; --$i) {
+	$output;
+	exec("svn log -qv -r{$i}", $output);
+	
+	foreach($output as $line) {
+	  // Extract revision
+	  if(substr($line, 0, 1) == 'r') {
+		$revision = trim(substr($line, 0, strpos($line, '|')));
+		fwrite(STDOUT, "Checking rev. {$revision} \r\n");  
+		echo "Checking rev. {$revision} \r\n";
+	  }
+	  // If file is deleted
+	  elseif(trim(substr($line, 0, 4)) == 'D') {
+		$fileName = trim(substr($line, strpos($line, 'D ')));
+		
+		if($fileToFind == '' || strpos($fileName, $fileToFind) !== false) {
+		  fwrite(STDOUT, "{$fileName} deleted in revision: {$revision} \r\n");
+		  file_put_contents('foundDeletedFiles.txt' , "{$fileName} deleted in revision: {$revision} \r\n", FILE_APPEND);
+		  if($fileToFind != '') {
+			fwrite(STDOUT, "Done! \r\n");
+			exit;
+		  }
+		}
+		echo "{$fileName} deleted in revision: {$revision} \r\n";
+	  }
+	}
+}
+
+unset($revision);
+unset($fileName);    
+unset($output);
+
+fwrite(STDOUT, "Done! \r\n");
+exit;
