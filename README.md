@@ -29,5 +29,3 @@ If you look for all deleted files (i.e. don't specify a file) a file named found
 
 You are free to use and modify this script as long as you credit me and
 make your changes avalible to the public.
-
-Daniel Liljeberg <danielliljeberg@spray.se>
