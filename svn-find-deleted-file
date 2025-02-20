@@ -32,6 +32,26 @@ match_pattern() {
     return $?
 }
 
+# Function to check if a file matches any of the gitignore-style patterns
+matches_any_pattern() {
+    local file="$1"
+    local patterns=("${@:2}")
+    
+    # If no patterns provided, match everything
+    if [ ${#patterns[@]} -eq 0 ]; then
+        return 0
+    fi
+    
+    # Try each pattern
+    for pattern in "${patterns[@]}"; do
+        if match_pattern "$file" "$pattern"; then
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
 # Get revision to start searching from
 if [ -n "$1" ]; then
     rev=$1
@@ -40,12 +60,14 @@ else
     read rev
 fi
 
-# Get file pattern to search for (.gitignore style)
+# Get file pattern(s) to search for (.gitignore style)
 if [ -n "$2" ]; then
-    filePattern="$2"
+    # All arguments after the first one are treated as patterns
+    shift
+    filePatterns=("$@")
 else
-    echo -n "Enter file pattern to search for (.gitignore style, empty for all files): "
-    read filePattern
+    echo -n "Enter file pattern(s) to search for (.gitignore style, empty for all files, multiple patterns separated by space): "
+    read -a filePatterns
 fi
 
 # Loop backwards through revisions
@@ -62,10 +84,10 @@ for ((i=rev; i>0; i--)); do
         elif [[ "$(echo "$line" | awk '{print $1}')" == "D" ]]; then
             fileName=$(echo "$line" | sed 's/^D //')
             
-            if [[ -z "$filePattern" || $(match_pattern "$fileName" "$filePattern") -eq 0 ]]; then
+            if matches_any_pattern "$fileName" "${filePatterns[@]}"; then
                 echo "$fileName deleted in revision: $revision"
                 
-                if [[ -z "$filePattern" ]]; then
+                if [[ ${#filePatterns[@]} -eq 0 ]]; then
                     echo "$fileName deleted in revision: $revision" >> foundDeletedFiles.txt
                 else
                     echo "Done!"
