@@ -1,54 +1,80 @@
-#!/usr/bin/env php
-<?php
-if(!empty($argv[1])) {
-	$rev = (int)trim($argv[1]);
-}
-else {
-	fwrite(STDOUT,  "Enter revision to start searching from: ");
-	$rev = (int)trim(fgets(STDIN));
+#!/bin/bash
+
+# Function to check if a file matches the gitignore-style pattern
+match_pattern() {
+    local file="$1"
+    local pattern="$2"
+    
+    # Convert .gitignore style pattern to bash pattern
+    # Handle common .gitignore syntax:
+    # - * matches anything except /
+    # - ** matches anything including /
+    # - ? matches single character
+    # - [abc] matches character class
+    # - leading ! means negate the pattern (not implemented for simplicity)
+    
+    # Escape special characters except those used in patterns
+    pattern=$(echo "$pattern" | sed 's/[.^$]/\\&/g')
+    
+    # Replace ** with a special marker
+    pattern=$(echo "$pattern" | sed 's/\*\*/DOUBLESPLATMARKER/g')
+    
+    # Replace * with [^/]* (anything except /)
+    pattern=$(echo "$pattern" | sed 's/\*/[^\/]*/g')
+    
+    # Replace back ** (represented by marker) with .* (anything including /)
+    pattern=$(echo "$pattern" | sed 's/DOUBLESPLATMARKER/.*/g')
+    
+    # Add anchors for full string match
+    pattern="^$pattern$"
+    
+    [[ "$file" =~ $pattern ]]
+    return $?
 }
 
-if(!empty($argv[2])) {
-	$fileToFind = trim($argv[2]);
-}
-else {
-	fwrite(STDOUT,  "Enter file to search for (empty for all files): ");
-	$fileToFind = trim(fgets(STDIN));
-}
+# Get revision to start searching from
+if [ -n "$1" ]; then
+    rev=$1
+else
+    echo -n "Enter revision to start searching from: "
+    read rev
+fi
 
-for($i = $rev; $i > 0; --$i) {
-	$output;
-	exec("svn log -qv -r{$i}", $output);
-	
-	foreach($output as $line) {
-	  // Extract revision
-	  if(substr($line, 0, 1) == 'r') {
-		$revision = trim(substr($line, 0, strpos($line, '|')));
-		fwrite(STDOUT, "Checking rev. {$revision} \r\n");  
-		echo "Checking rev. {$revision} \r\n";
-	  }
-	  // If file is deleted
-	  elseif(trim(substr($line, 0, 4)) == 'D') {
-		$fileName = trim(substr($line, strpos($line, 'D ') + 1));
-		
-		if($fileToFind == '' || strpos($fileName, $fileToFind) !== false) {
-		  fwrite(STDOUT, "{$fileName} deleted in revision: {$revision} \r\n");		  
-		  
-		  if($fileToFind == '') {
-			file_put_contents('foundDeletedFiles.txt' , "{$fileName} deleted in revision: {$revision} \r\n", FILE_APPEND);
-		  }
-		  else {
-			fwrite(STDOUT, "Done! \r\n");
-			exit;
-		  }
-		}
-	  }
-	}
-}
+# Get file pattern to search for (.gitignore style)
+if [ -n "$2" ]; then
+    filePattern="$2"
+else
+    echo -n "Enter file pattern to search for (.gitignore style, empty for all files): "
+    read filePattern
+fi
 
-unset($revision);
-unset($fileName);    
-unset($output);
+# Loop backwards through revisions
+for ((i=rev; i>0; i--)); do
+    output=$(svn log -qv -r$i)
+    
+    # Process each line of the output
+    while IFS= read -r line; do
+        # Extract revision
+        if [[ "${line:0:1}" == "r" ]]; then
+            revision=$(echo "$line" | cut -d"|" -f1 | tr -d ' ')
+            echo "Checking rev. $revision"
+        # If file is deleted
+        elif [[ "$(echo "$line" | awk '{print $1}')" == "D" ]]; then
+            fileName=$(echo "$line" | sed 's/^D //')
+            
+            if [[ -z "$filePattern" || $(match_pattern "$fileName" "$filePattern") -eq 0 ]]; then
+                echo "$fileName deleted in revision: $revision"
+                
+                if [[ -z "$filePattern" ]]; then
+                    echo "$fileName deleted in revision: $revision" >> foundDeletedFiles.txt
+                else
+                    echo "Done!"
+                    exit 0
+                fi
+            fi
+        fi
+    done <<< "$output"
+done
 
-fwrite(STDOUT, "Done! \r\n");
-exit;
+echo "Done!"
+exit 0
