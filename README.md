@@ -1,15 +1,21 @@
 # svn-find-deleted-file
 Small script to traverse a SVN repository and find the revision where a file was deleted
 
-This is a small script I wrote a few years back when working on a system where people remebered there being a file
+This is a reimplementation in bash of a small script I wrote a few years back when working on a system where people remebered there being a file
 in the repository that was no longer there. No one could say when the file had been removed. 
+
+The script now accepts patterns like:
+
+*.java (all Java files)
+src/**/*.js (all JavaScript files under src directory, any depth)
+test/unit/*_test.rb (all Ruby test files in the unit directory)
 
 Usage:
 
 To start looking from revision 1052 backwards for the file "FooBar.txt"
 
 ```
-$ ./svn-find-deleted-file 1052 "FooBar.txt" 
+$ ./svn-find-deleted-file 1052 "FooBar.txt"
  
 Checking rev. r1052
 Checking rev. r1051
